@@ -45,17 +45,29 @@ def list_tasks() -> None:
 
 def mark_complete(task_id: str) -> None:
     tasks = load_tasks()
-    task_id = int(task_id)
-    
-    # Bug: This implementation doesn't check if the task was already completed
-    # and doesn't provide proper feedback if task is not found
-    for task in tasks:
-        if task["id"] == task_id:
-            task["completed"] = True
-            break
-    
-    save_tasks(tasks)
-    print(f"Task {task_id} marked as complete")
+    try:
+        task_id = int(task_id)
+        if task_id <= 0:
+            print("Error: Task ID must be a positive number")
+            return
+            
+        task_found = False
+        for task in tasks:
+            if task["id"] == task_id:
+                task_found = True
+                if task["completed"]:
+                    print(f"Task {task_id} is already completed")
+                    return
+                task["completed"] = True
+                save_tasks(tasks)
+                print(f"Task {task_id} marked as complete")
+                break
+                
+        if not task_found:
+            print(f"Error: Task {task_id} not found")
+            
+    except ValueError:
+        print("Error: Task ID must be a valid number")
 
 def main():
     parser = argparse.ArgumentParser(description="Simple TODO list CLI application")

@@ -6,6 +6,7 @@ A simple command-line todo list application built with Python. The application u
 
 - Add new tasks with titles and optional descriptions
 - List all tasks with their completion status
+- Mark tasks as complete
 - Data persistence using JSON storage
 
 ## Installation
@@ -26,6 +27,11 @@ python src/todo.py add "Task title" -d "Optional task description"
 List all tasks:
 ```bash
 python src/todo.py list
+```
+
+Mark a task as complete:
+```bash
+python src/todo.py complete <task_id>
 ```
 
 Show help:
