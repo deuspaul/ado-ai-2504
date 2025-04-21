@@ -73,3 +73,6 @@ cython_debug/
 
 # Task data
 tasks.json
+
+#Azure DevOps Agent
+myagent/
