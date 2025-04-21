@@ -4,6 +4,16 @@ trigger:
 
 pool: 'ado-ai2504'
 
+variables:
+  - name: major
+    value: '1'
+  - name: minor
+    value: '0'
+  - name: patch
+    value: $[counter(variables['minor'], 0)]
+  - name: version
+    value: $(major).$(minor).$(patch)
+
 stages:
 - stage: Build
   jobs:
@@ -58,3 +68,54 @@ stages:
       inputs:
         pathToPublish: 'trivy-results.json'
         artifactName: 'DependencyScanResults'
+
+- stage: Release
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  dependsOn: Build
+  jobs:
+  - job: CreateRelease
+    steps:
+    - checkout: self
+      persistCredentials: true
+      
+    - script: |
+        # Configure git with PAT authentication
+        git config --global user.email "azure-pipeline@example.com"
+        git config --global user.name "Azure Pipeline"
+        
+        # Use the system access token for authentication
+        git remote set-url origin https://oauth:$(System.AccessToken)@dev.azure.com/Az-400-VideoLesson/_git/$(Build.Repository.Name)
+        
+        # Create version tag
+        git tag -a v$(version) -m "Release version $(version)"
+        git push origin v$(version)
+      displayName: 'Create Release Tag'
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+    - script: |
+        # Generate changelog
+        echo "# Changelog" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## v$(version) ($(date '+%Y-%m-%d'))" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        git log --pretty=format:"* %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> CHANGELOG.md
+      displayName: 'Generate Changelog'
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: '$(Build.SourcesDirectory)/src'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/release-v$(version).zip'
+        replaceExistingArchive: true
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)/release-v$(version).zip'
+        artifactName: 'Release'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'CHANGELOG.md'
+        artifactName: 'Changelog'
