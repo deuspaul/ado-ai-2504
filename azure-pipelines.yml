@@ -37,7 +37,7 @@ stages:
         reportDirectory: 'htmlcov'
 
     - script: |
-        bandit -r . -f json -o bandit-results.json
+        bandit -r . -f json -o bandit-results.json --exclude './tests,**/test_*.py'
       displayName: 'Run Bandit Security Scan'
       continueOnError: true
 
@@ -47,7 +47,9 @@ stages:
         artifactName: 'SecurityScanResults'
 
     - script: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        mkdir -p $HOME/.local/bin
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $HOME/.local/bin
+        export PATH=$HOME/.local/bin:$PATH
         trivy fs --format json --output trivy-results.json .
       displayName: 'Run Trivy Dependency Scan'
       continueOnError: true
